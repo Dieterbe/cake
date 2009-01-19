@@ -59,11 +59,11 @@ class ModelTask extends Shell {
  * @access public
  */
 	function execute() {
-		if (empty($this->args)) {
+	// $this->args contains only the parts after the 'cake bake (...) model' part. TODO: look up why, although this make sense.. if it would recognize -a b parts here too
+		//if (empty($this->args)) { Why the hell would me passing one or more arguments mean I don't want interactivity?
 			$this->__interactive();
-		}
-
-		if (!empty($this->args[0])) {
+		//}
+		/*if (!empty($this->args[0])) {
 			$model = Inflector::camelize($this->args[0]);
 			if ($this->bake($model)) {
 				if ($this->_checkUnitTest()) {
@@ -71,6 +71,7 @@ class ModelTask extends Shell {
 				}
 			}
 		}
+		*/
 	}
 /**
  * Handles interactive baking
@@ -97,7 +98,8 @@ class ModelTask extends Shell {
 
 		$connections = array_keys($configs);
 		if (count($connections) > 1) {
-			$useDbConfig = $this->in(__('Use Database Config', true) .':', $connections, 'default');
+			// $useDbConfig = $this->in(__('Use Database Config', true) .':', $connections, 'default');
+			$useDbConfig = 'dev';
 		}
 
 		$currentModelName = $this->getName($useDbConfig);
@@ -127,8 +129,8 @@ class ModelTask extends Shell {
 			}
 		}
 
-		$wannaDoValidation = $this->in(__('Would you like to supply validation criteria for the fields in your model?', true), array('y','n'), 'y');
-
+		//$wannaDoValidation = $this->in(__('Would you like to supply validation criteria for the fields in your model?', true), array('y','n'), 'y');
+		$wannaDoValidation = 'y';
 		if (in_array($useTable, $this->__tables)) {
 			App::import('Model');
 			$tempModel = new Model(array('name' => $currentModelName, 'table' => $useTable, 'ds' => $useDbConfig));
@@ -148,7 +150,8 @@ class ModelTask extends Shell {
 			$validate = $this->doValidation($tempModel);
 		}
 
-		$wannaDoAssoc = $this->in(__('Would you like to define model associations (hasMany, hasOne, belongsTo, etc.)?', true), array('y','n'), 'y');
+		//$wannaDoAssoc = $this->in(__('Would you like to define model associations (hasMany, hasOne, belongsTo, etc.)?', true), array('y','n'), 'y');
+		$wannaDoAssoc = 'y';
 		if ((low($wannaDoAssoc) == 'y' || low($wannaDoAssoc) == 'yes')) {
 			$associations = $this->doAssociations($tempModel);
 		}
@@ -159,9 +162,9 @@ class ModelTask extends Shell {
 		$this->hr();
 		$this->out("Name:       " . $currentModelName);
 
-		if ($useDbConfig !== 'default') {
-			$this->out("DB Config:  " . $useDbConfig);
-		}
+	//	if ($useDbConfig !== 'default') {
+	//		$this->out("DB Config:  " . $useDbConfig);
+	//	}
 		if ($fullTableName !== Inflector::tableize($currentModelName)) {
 			$this->out("DB Table:   " . $fullTableName);
 		}
@@ -199,10 +202,10 @@ class ModelTask extends Shell {
 			}
 		}
 		$this->hr();
-		$looksGood = $this->in(__('Look okay?', true), array('y','n'), 'y');
-
+		//$looksGood = $this->in(__('Look okay?', true), array('y','n'), 'y');
+		$looksGood = 'y';
 		if (low($looksGood) == 'y' || low($looksGood) == 'yes') {
-			if ($this->bake($currentModelName, $associations, $validate, $primaryKey, $useTable, $useDbConfig)) {
+			if ($this->bake($currentModelName, $associations, $validate, $primaryKey, $useTable)) {
 				if ($this->_checkUnitTest()) {
 					$this->bakeTest($currentModelName, $useTable, $associations);
 				}
@@ -238,51 +241,62 @@ class ModelTask extends Shell {
 			$options = array_diff(get_class_methods('Validation'), $parent);
 		}
 
+		$modelname = strtolower($model->name);
 		foreach ($fields as $fieldName => $field) {
-			$prompt = 'Field: ' . $fieldName . "\n";
-			$prompt .= 'Type: ' . $field['type'] . "\n";
-			$prompt .= '---------------------------------------------------------------'."\n";
-			$prompt .= 'Please select one of the following validation options:'."\n";
-			$prompt .= '---------------------------------------------------------------'."\n";
+			$output = array ();
+			$matchingrule = $modelname;
+			exec("awk '/[[:blank:]]$fieldName.*cake validate $modelname/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
+			if (!is_array($output) || !isset($output[0]) || !strlen($output[0])) { //note that awk exit(0)'s also if there is no result
+				$matchingrule = 'catchall';
+				//echo "Trying catchall rule\n";
+				exec("awk '/[[:blank:]]cake validate ALL $fieldName/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
+			}
+			if(is_array($output) && isset($output[0]) && strlen($output[0])) {
+				$choice = $output[0]; //TODO: some checking would be nice
+				echo "Field: $fieldName (type " . $field['type'] . "-> $choice taken from sql config ($matchingrule rule)\n";
+			}
+			else {
+				$prompt = "Model $modelname Field: $fieldName (type " . $field['type'] . ")\n";
+				$prompt .= 'Could not auto-detect.  Please select one of the following validation options:'."\n";
+				sort($options);
 
-			sort($options);
+				$skip = 1;
+				foreach ($options as $key => $option) {
+					if ($option{0} != '_' && strtolower($option) != 'getinstance') {
+						$prompt .= "{$skip} - {$option}\n";
+						$choices[$skip] = strtolower($option);
+						$skip++;
+					}
+				}
 
-			$skip = 1;
-			foreach ($options as $key => $option) {
-				if ($option{0} != '_' && strtolower($option) != 'getinstance') {
-					$prompt .= "{$skip} - {$option}\n";
-					$choices[$skip] = strtolower($option);
-					$skip++;
+				$methods = array_flip($choices);
+
+				$prompt .= "{$skip} - Do not do any validation on this field.\n";
+				$prompt .= "... or enter in a valid regex validation string.\n";
+
+				$guess = $skip;
+				if ($field['null'] != 1 && $fieldName != $model->primaryKey && !in_array($fieldName, array('created', 'modified', 'updated'))) {
+					if ($fieldName == 'email') {
+						$guess = $methods['email'];
+					} elseif ($field['type'] == 'string') {
+						$guess = $methods['notempty'];
+					} elseif ($field['type'] == 'integer') {
+						$guess = $methods['numeric'];
+					} elseif ($field['type'] == 'boolean') {
+						$guess = $methods['numeric'];
+					} elseif ($field['type'] == 'datetime') {
+						$guess = $methods['date'];
+					}
+				}
+
+				if ($interactive === true) {
+					$this->out('');
+					$choice = $this->in($prompt, null, $guess);
+				} else {
+					$choice = $guess;
 				}
 			}
-
-			$methods = array_flip($choices);
-
-			$prompt .=  "{$skip} - Do not do any validation on this field.\n";
-			$prompt .= "... or enter in a valid regex validation string.\n";
-
-			$guess = $skip;
-			if ($field['null'] != 1 && $fieldName != $model->primaryKey && !in_array($fieldName, array('created', 'modified', 'updated'))) {
-				if ($fieldName == 'email') {
-					$guess = $methods['email'];
-				} elseif ($field['type'] == 'string') {
-					$guess = $methods['notempty'];
-				} elseif ($field['type'] == 'integer') {
-					$guess = $methods['numeric'];
-				} elseif ($field['type'] == 'boolean') {
-					$guess = $methods['numeric'];
-				} elseif ($field['type'] == 'datetime') {
-					$guess = $methods['date'];
-				}
-			}
-
-			if ($interactive === true) {
-				$this->out('');
-				$choice = $this->in($prompt, null, $guess);
-			} else {
-				$choice = $guess;
-			}
-			if ($choice != $skip) {
+			if ($choice != @$skip && $choice != 'none' ) {
 				if (is_numeric($choice) && isset($choices[$choice])) {
 					$validate[$fieldName] = $choices[$choice];
 				} else {
@@ -398,9 +412,18 @@ class ModelTask extends Shell {
 						$count = count($associations[$type]);
 						$response = 'y';
 						for ($i = 0; $i < $count; $i++) {
-							$prompt = "{$model->name} {$type} {$associations[$type][$i]['alias']}";
-							$response = $this->in("{$prompt}?", array('y','n'), 'y');
-
+							//$prompt = "{$model->name} {$type} {$associations[$type][$i]['alias']}";
+							//$response = $this->in("{$prompt}?", array('y','n'), 'y');
+							//NOTE: hardcode our conventions, and maybe exceptional cases here
+							
+							if ( $type == 'hasOne' )
+							{
+								$response = 'n';
+							}
+							else
+							{
+								$response = 'y';
+							}
 							if ('n' == low($response) || 'no' == low($response)) {
 								unset($associations[$type][$i]);
 							} else {
@@ -411,7 +434,7 @@ class ModelTask extends Shell {
 									if ($type === 'hasOne' || $type === 'hasMany') {
 										$alias = 'Child' . $associations[$type][$i]['alias'];
 									}
-
+									
 									$alternateAlias = $this->in(sprintf(__('This is a self join. Use %s as the alias', true), $alias), array('y', 'n'), 'y');
 
 									if ('n' == low($alternateAlias) || 'no' == low($alternateAlias)) {
@@ -427,8 +450,8 @@ class ModelTask extends Shell {
 				}
 			}
 
-			$wannaDoMoreAssoc = $this->in(__('Would you like to define some additional model associations?', true), array('y','n'), 'n');
-
+			//$wannaDoMoreAssoc = $this->in(__('Would you like to define some additional model associations?', true), array('y','n'), 'n');
+			$wannaDoMoreAssoc = 'n'; //NOTE: I assume that my sql layout is so conventional it doesn't need more config then this.
 			while ((low($wannaDoMoreAssoc) == 'y' || low($wannaDoMoreAssoc) == 'yes')) {
 				$assocs = array(1 => 'belongsTo', 2 => 'hasOne', 3 => 'hasMany', 4 => 'hasAndBelongsToMany');
 				$bad = true;
@@ -739,12 +762,12 @@ class ModelTask extends Shell {
 		return false;
 	}
 /**
- * outputs the a list of possible models or controllers from database
+ * returns a list of known tables
  *
  * @param string $useDbConfig Database configuration name
  * @access public
  */
-	function listAll($useDbConfig = 'default', $interactive = true) {
+	function listTables($useDbConfig = 'default', $interactive = true) {
 		$db =& ConnectionManager::getDataSource($useDbConfig);
 		$usePrefix = empty($db->config['prefix']) ? '' : $db->config['prefix'];
 		if ($usePrefix) {
@@ -757,12 +780,24 @@ class ModelTask extends Shell {
 		} else {
 			$tables = $db->listSources();
 		}
+		$this->__tables = $tables;
+		return $tables;
+	}
+
+
+/**
+ * outputs the a list of possible models or controllers from database
+ *
+ * @param string $useDbConfig Database configuration name
+ * @access public
+ */
+	function listAll($useDbConfig = 'default', $interactive = true) {
+		$tables = $this->ListTables($useDbConfig, $interactive);
+
 		if (empty($tables)) {
 			$this->err(__('Your database does not have any tables.', true));
 			$this->_stop();
 		}
-
-		$this->__tables = $tables;
 
 		if ($interactive === true) {
 			$this->out(__('Possible Models based on your current database:', true));
@@ -781,6 +816,17 @@ class ModelTask extends Shell {
  * @access public
  */
 	function getName($useDbConfig) {
+		if(isset($this->args[0])) {
+			$tables = $this->ListTables($useDbConfig);
+			$modelnames = array ();
+			foreach ($tables as $table)
+			{
+				$modelnames [] = $this->_modelName($table);
+			}
+			if (in_array($this->args[0],$modelnames)) return $this->args[0]; // named parameters would be nice here
+			$this->err(__('Your specified model ' . $this->args[0] . ' is not a known model', true));
+			$this->_stop();
+		} 
 		$this->listAll($useDbConfig);
 
 		$enteredModel = '';

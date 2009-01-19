@@ -131,23 +131,25 @@ class ControllerTask extends Shell {
 		if (low($doItInteractive) == 'y' || low($doItInteractive) == 'yes') {
 			$this->interactive = true;
 
-			$wannaUseScaffold = $this->in(__("Would you like to use scaffolding?", true), array('y','n'), 'n');
-
+			//$wannaUseScaffold = $this->in(__("Would you like to use scaffolding?", true), array('y','n'), 'n');
+			$wannaUseScaffold = 'n';
 			if (low($wannaUseScaffold) == 'n' || low($wannaUseScaffold) == 'no') {
 
-				$wannaDoScaffolding = $this->in(__("Would you like to include some basic class methods (index(), add(), view(), edit())?", true), array('y','n'), 'n');
-
+				//$wannaDoScaffolding = $this->in(__("Would you like to include some basic class methods (index(), add(), view(), edit())?", true), array('y','n'), 'n');
+				$wannaDoScaffolding = 'y';
 				if (low($wannaDoScaffolding) == 'y' || low($wannaDoScaffolding) == 'yes') {
-					$wannaDoAdmin = $this->in(__("Would you like to create the methods for admin routing?", true), array('y','n'), 'n');
+					$wannaDoAdmin = 'n';
+					//$wannaDoAdmin = $this->in(__("Would you like to create the methods for admin routing?", true), array('y','n'), 'n');
 				}
 
-				$wannaDoHelpers = $this->in(__("Would you like this controller to use other helpers besides HtmlHelper and FormHelper?", true), array('y','n'), 'n');
-
+				//$wannaDoHelpers = $this->in(__("Would you like this controller to use other helpers besides HtmlHelper and FormHelper?", true), array('y','n'), 'n');
+				$wannaDoHelpers = 'n';
 				if (low($wannaDoHelpers) == 'y' || low($wannaDoHelpers) == 'yes') {
 					$helpersList = $this->in(__("Please provide a comma separated list of the other helper names you'd like to use.\nExample: 'Ajax, Javascript, Time'", true));
 					$helpersListTrimmed = str_replace(' ', '', $helpersList);
 					$helpers = explode(',', $helpersListTrimmed);
 				}
+				 $wannaDoComponents = 'n';
 				$wannaDoComponents = $this->in(__("Would you like this controller to use any components?", true), array('y','n'), 'n');
 
 				if (low($wannaDoComponents) == 'y' || low($wannaDoComponents) == 'yes') {
@@ -156,7 +158,8 @@ class ControllerTask extends Shell {
 					$components = explode(',', $componentsListTrimmed);
 				}
 
-				$wannaUseSession = $this->in(__("Would you like to use Sessions?", true), array('y','n'), 'y');
+				//$wannaUseSession = $this->in(__("Would you like to use Sessions?", true), array('y','n'), 'y');
+				$wannaUseSession = 'y';
 			} else {
 				$wannaDoScaffolding = 'n';
 			}

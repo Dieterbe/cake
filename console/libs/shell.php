@@ -426,7 +426,8 @@ class Shell extends Object {
 		$path = str_replace(DS . DS, DS, $path);
 		$this->out("\n" . sprintf(__("Creating file %s", true), $path));
 		if (is_file($path) && $this->interactive === true) {
-			$key = $this->in(__("File exists, overwrite?", true). " {$path}",  array('y', 'n', 'q'), 'n');
+			//$key = $this->in(__("File exists, overwrite?", true). " {$path}",  array('y', 'n', 'q'), 'n');
+			$key = 'y';
 			if (low($key) == 'q') {
 				$this->out(__("Quitting.", true) ."\n");
 				exit;
@@ -471,9 +472,8 @@ class Shell extends Object {
 		if (App::import('vendor', 'simpletest' . DS . 'simpletest')) {
 			return true;
 		}
-		$unitTest = $this->in('Cake test suite not installed.  Do you want to bake unit test files anyway?', array('y','n'), 'y');
-		$result = low($unitTest) == 'y' || low($unitTest) == 'yes';
-
+		//$unitTest = $this->in('Cake test suite not installed.  Do you want to bake unit test files anyway?', array('y','n'), 'y');
+		$result = 'y';
 		if ($result) {
 			$this->out("\nYou can download the Cake test suite from http://cakeforge.org/projects/testsuite/", true);
 		}

@@ -280,6 +280,7 @@ class ShellDispatcher {
 			$this->shiftArgs();
 			$this->shellName = Inflector::camelize($this->shell);
 			$this->shellClass = $this->shellName . 'Shell';
+			echo ("Dispatching shell " . $this->shellName . " shellclass " . $this->shellClass . "\n");
 
 			if ($this->shell === 'help') {
 				$this->help();
@@ -305,15 +306,18 @@ class ShellDispatcher {
 						if (isset($this->args[0])) {
 							$command = $this->args[0];
 						}
+						echo ("Shell: " . $this->shellClass . " (command: " . $this->shellCommand . ")\n");
 						$this->shellCommand = Inflector::variable($command);
 						$shell = new $this->shellClass($this);
 
 						if (strtolower(get_parent_class($shell)) == 'shell') {
+							echo "intialising and loading tasks on " . get_class($shell) . "\n";
 							$shell->initialize();
 							$shell->loadTasks();
 
 							foreach ($shell->taskNames as $task) {
 								if (strtolower(get_parent_class($shell)) == 'shell') {
+									echo ("task " . $task . " -> initialising and loading tasks\n");
 									$shell->{$task}->initialize();
 									$shell->{$task}->loadTasks();
 								}
@@ -331,6 +335,7 @@ class ShellDispatcher {
 										$this->help();
 									}
 								}
+								echo "executing " . get_class($shell) . "-> $task ->execute()\n";
 								return $shell->{$task}->execute();
 							}
 						}
@@ -359,9 +364,11 @@ class ShellDispatcher {
 						}
 
 						if ($missingCommand && method_exists($shell, 'main')) {
+							echo "calling startup() and main() on " . get_class($shell) . "\n";
 							$shell->startup();
 							return $shell->main();
 						} elseif (!$privateMethod && method_exists($shell, $command)) {
+							echo "calling \$this -> shiftArgs, " . get_class($shell) ." startup() and " . get_class($shell) . "->$command\n";
 							$this->shiftArgs();
 							$shell->startup();
 							return $shell->{$command}();
@@ -475,6 +482,9 @@ class ShellDispatcher {
 		}
 
 		$this->params = array_merge($this->params, $params);
+		echo "parsed params\n"; // note -foo caused key foo, -foo bar: foo => bar. things without - don't get in here.
+		print_r($this->params);
+
 	}
 /**
  * Helper for recursively paraing params
