@@ -65,9 +65,9 @@ class ControllerTask extends Shell {
  * @access public
  */
 	function execute() {
-		if (empty($this->args)) {
+		//if (empty($this->args)) {
 			$this->__interactive();
-		}
+		//}
 
 		if (isset($this->args[0])) {
 			$controller = Inflector::camelize($this->args[0]);
@@ -132,7 +132,7 @@ class ControllerTask extends Shell {
 			$this->interactive = true;
 
 			//$wannaUseScaffold = $this->in(__("Would you like to use scaffolding?", true), array('y','n'), 'n');
-			$wannaUseScaffold = 'n';
+			$wannaUseScaffold = 'n';	
 			if (low($wannaUseScaffold) == 'n' || low($wannaUseScaffold) == 'no') {
 
 				//$wannaDoScaffolding = $this->in(__("Would you like to include some basic class methods (index(), add(), view(), edit())?", true), array('y','n'), 'n');
@@ -281,17 +281,26 @@ class ControllerTask extends Shell {
 		$compact = array();
 		$actions .= "\tfunction {$admin}add() {\n";
 		$actions .= "\t\tif (!empty(\$this->data)) {\n";
-		$actions .= "\t\t\t\$this->{$currentModelName}->create();\n";
-		$actions .= "\t\t\tif (\$this->{$currentModelName}->save(\$this->data)) {\n";
+		if(count($modelObj->belongsTo)>0)
+		{
+			$actions .= "\t\t\tif (\$this->{$currentModelName}->saveAll(\$this->data,array('validate'=>'false'))) {\n"; //TODO: fix this. why doesn't it work with 'first' :'(
+			$what = "$currentModelName (and associated items)";
+		}
+		else
+		{
+			$actions .= "\t\t\t\$this->{$currentModelName}->create();\n";
+			$actions .= "\t\t\tif (\$this->{$currentModelName}->save(\$this->data)) {\n";
+			$what = $currentModelName;
+		}
 		if ($wannaUseSession) {
-			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The ".$singularHumanName." has been saved', true));\n";
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The ".$what." has been saved', true));\n";
 			$actions .= "\t\t\t\t\$this->redirect(array('action'=>'index'));\n";
 		} else {
-			$actions .= "\t\t\t\t\$this->flash(__('{$currentModelName} saved.', true), array('action'=>'index'));\n";
+			$actions .= "\t\t\t\t\$this->flash(__('{$cwhat} saved.', true), array('action'=>'index'));\n";
 		}
 		$actions .= "\t\t\t} else {\n";
 		if ($wannaUseSession) {
-			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The {$singularHumanName} could not be saved. Please, try again.', true));\n";
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The {$what} could not be saved. Please, try again.', true));\n";
 		}
 		$actions .= "\t\t\t}\n";
 		$actions .= "\t\t}\n";
