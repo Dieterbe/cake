@@ -245,11 +245,17 @@ class ModelTask extends Shell {
 		foreach ($fields as $fieldName => $field) {
 			$output = array ();
 			$matchingrule = $modelname;
-			exec("awk '/[[:blank:]]$fieldName.*cake validate $modelname/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
+			$search = $fieldName;
+			if (strpos($fieldName,'_id'))
+			{
+				$search = '\*_id'; // ugly workaround for my poor php/regex matching skills
+			}
+			
+			exec("awk '/[[:blank:]]$search.*cake validate $modelname/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
 			if (!is_array($output) || !isset($output[0]) || !strlen($output[0])) { //note that awk exit(0)'s also if there is no result
 				$matchingrule = 'catchall';
 				//echo "Trying catchall rule\n";
-				exec("awk '/[[:blank:]]cake validate ALL $fieldName/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
+				exec("awk '/[[:blank:]]cake validate ALL $search/ {print \$NF}' /home/dieter/code/crm/branches/dieter/code-misc/colomanager.sql",$output,$exit);
 			}
 			if(is_array($output) && isset($output[0]) && strlen($output[0])) {
 				$choice = $output[0]; //TODO: some checking would be nice
@@ -582,6 +588,13 @@ class ModelTask extends Shell {
 			$out .= "\t);\n";
 		}
 		$out .= "\n";
+		
+		if ($name == 'Customer')
+		{
+			$out .= "\tvar \$actsAs = array('Acl' => array('requester'));\n";
+			$out .= "\n";
+			
+		}
 
 		if (!empty($associations)) {
 			if (!empty($associations['belongsTo']) || !empty($associations['hasOne']) || !empty($associations['hasMany']) || !empty($associations['hasAndBelongsToMany'])) {
@@ -684,6 +697,12 @@ class ModelTask extends Shell {
 				}
 				$out .= "\t);\n\n";
 			}
+		}
+		
+		if ($name == 'Customer')
+		{
+			$out .= "\n\tfunction parentNode() {\n\t\treturn null;\n\t}\n";
+			$out .= "\n";
 		}
 		$out .= "}\n";
 		$out .= "?>";
