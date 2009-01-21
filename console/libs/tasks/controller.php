@@ -269,7 +269,8 @@ class ControllerTask extends Shell {
 		$actions .= "\n";
 		$actions .= "\tfunction {$admin}index() {\n";
 		$actions .= "\t\t\$this->{$currentModelName}->recursive = 1;\n"; //i usually use this. it seems to work for all my stuff.
-		$actions .= "\t\t\$this->set('{$pluralName}', \$this->paginate());\n";
+		//$actions .= "\t\t\$this->set('{$pluralName}', \$this->paginate());\n"; //default
+		$actions .= "\t\t\$this->set('{$pluralName}', \$this->paginate('$singularHumanName',\$this->passedArgs));\n"; // my version: use $this->passedArgs as pagination conditions. cake espaces where needed but TODO users can still construct invalid queries
 		$actions .= "\t}\n";
 		$actions .= "\n";
 		$actions .= "\tfunction {$admin}view(\$id = null) {\n";
