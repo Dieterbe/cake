@@ -260,7 +260,7 @@ class ControllerTask extends Shell {
 		$pluralHumanName = Inflector::humanize($controllerName);
 		$actions .= "\n";
 		$actions .= "\tfunction {$admin}index() {\n";
-		$actions .= "\t\t\$this->{$currentModelName}->recursive = 0;\n";
+		$actions .= "\t\t\$this->{$currentModelName}->recursive = 1;\n"; //i usually use this. it seems to work for all my stuff.
 		$actions .= "\t\t\$this->set('{$pluralName}', \$this->paginate());\n";
 		$actions .= "\t}\n";
 		$actions .= "\n";
@@ -277,30 +277,65 @@ class ControllerTask extends Shell {
 		$actions .= "\t}\n";
 		$actions .= "\n";
 
-		/* ADD ACTION */
+
+                /* ADD ACTION */
 		$compact = array();
 		$actions .= "\tfunction {$admin}add() {\n";
 		$actions .= "\t\tif (!empty(\$this->data)) {\n";
-		if(count($modelObj->belongsTo)>0)
-		{
-			$actions .= "\t\t\tif (\$this->{$currentModelName}->saveAll(\$this->data,array('validate'=>'false'))) {\n"; //TODO: fix this. why doesn't it work with 'first' :'(
-			$what = "$currentModelName (and associated items)";
-		}
-		else
-		{
-			$actions .= "\t\t\t\$this->{$currentModelName}->create();\n";
-			$actions .= "\t\t\tif (\$this->{$currentModelName}->save(\$this->data)) {\n";
-			$what = $currentModelName;
-		}
+		$actions .= "\t\t\t\$this->{$currentModelName}->create();\n";
+		$actions .= "\t\t\tif (\$this->{$currentModelName}->save(\$this->data)) {\n";
 		if ($wannaUseSession) {
-			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The ".$what." has been saved', true));\n";
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The ".$singularHumanName." has been saved', true));\n";
 			$actions .= "\t\t\t\t\$this->redirect(array('action'=>'index'));\n";
 		} else {
-			$actions .= "\t\t\t\t\$this->flash(__('{$cwhat} saved.', true), array('action'=>'index'));\n";
+			$actions .= "\t\t\t\t\$this->flash(__('{$currentModelName} saved.', true), array('action'=>'index'));\n";
+		}
+			$actions .= "\t\t\t} else {\n";
+		if ($wannaUseSession) {
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The {$singularHumanName} could not be saved. Please, try again.', true));\n";
+		}                                                                           
+		$actions .= "\t\t\t}\n";                                                                                                                
+		$actions .= "\t\t}\n";
+		foreach ($modelObj->hasAndBelongsToMany as $associationName => $relation) {
+			if (!empty($associationName)) {
+				$habtmModelName = $this->_modelName($associationName);   
+				$habtmSingularName = $this->_singularName($associationName);
+				$habtmPluralName = $this->_pluralName($associationName);    
+				$actions .= "\t\t\${$habtmPluralName} = \$this->{$currentModelName}->{$habtmModelName}->find('list');\n";
+				$compact[] = "'{$habtmPluralName}'";                                                                     
+			}
+		}
+		foreach ($modelObj->belongsTo as $associationName => $relation) {     
+			if (!empty($associationName)) {                          
+				$belongsToModelName = $this->_modelName($associationName);
+				$belongsToPluralName = $this->_pluralName($associationName);
+				$actions .= "\t\t\${$belongsToPluralName} = \$this->{$currentModelName}->{$belongsToModelName}->find('list');\n";
+				$compact[] = "'{$belongsToPluralName}'";
+			}
+		}
+		if (!empty($compact)) {
+			$actions .= "\t\t\$this->set(compact(".join(', ', $compact)."));\n";
+		}
+		$actions .= "\t}\n";
+		$actions .= "\n"; 
+
+
+		/* ADD_ASSOC ACTION */
+	if(count($modelObj->belongsTo)>0)
+	{
+		$compact = array();
+		$actions .= "\tfunction {$admin}add_assoc() {\n";
+		$actions .= "\t\tif (!empty(\$this->data)) {\n";
+		$actions .= "\t\t\tif (\$this->{$currentModelName}->saveAll(\$this->data,array('validate'=>'false'))) {\n"; //TODO: fix this. why doesn't it work with 'first' :'(
+		if ($wannaUseSession) {
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The $currentModelName (and associated items) have been saved', true));\n";
+			$actions .= "\t\t\t\t\$this->redirect(array('action'=>'index'));\n";
+		} else {
+			$actions .= "\t\t\t\t\$this->flash(__('{$currentModelName} (and associated items) saved.', true), array('action'=>'index'));\n";
 		}
 		$actions .= "\t\t\t} else {\n";
 		if ($wannaUseSession) {
-			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The {$what} could not be saved. Please, try again.', true));\n";
+			$actions .= "\t\t\t\t\$this->Session->setFlash(__('The {$currentModelName} (and associated items) could not be saved. Please, try again.', true));\n";
 		}
 		$actions .= "\t\t\t}\n";
 		$actions .= "\t\t}\n";
@@ -324,9 +359,11 @@ class ControllerTask extends Shell {
 		if (!empty($compact)) {
 			$actions .= "\t\t\$this->set(compact(".join(', ', $compact)."));\n";
 		}
+		$actions .= "\t\t\$this->set('default-expanded',true);\n";
+		$actions .= "\t\t\$this->render('add');\n";
 		$actions .= "\t}\n";
 		$actions .= "\n";
-
+	}
 		/* EDIT ACTION */
 		$compact = array();
 		$actions .= "\tfunction {$admin}edit(\$id = null) {\n";
