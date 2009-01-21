@@ -69,7 +69,7 @@ class ControllerTask extends Shell {
 			$this->__interactive();
 		//}
 
-		if (isset($this->args[0])) {
+/*		if (isset($this->args[0])) {
 			$controller = Inflector::camelize($this->args[0]);
 			$actions = null;
 			if (isset($this->args[1]) && $this->args[1] == 'scaffold') {
@@ -94,6 +94,7 @@ class ControllerTask extends Shell {
 				}
 			}
 		}
+*/
 	}
 /**
  * Interactive
@@ -114,7 +115,14 @@ class ControllerTask extends Shell {
 			$wannaDoAdmin = 'n';
 			$wannaUseScaffold = 'n';
 			$wannaDoScaffolding = 'y';
-			$controllerName = $this->getName();
+			if(isset($this->args[0]))
+			{
+				$controllerName = $this->args[0]; //TODO: checking if it exists etc. this is dirty
+			}
+			else
+			{
+				$controllerName = $this->getName();
+			}
 		}
 		$this->hr();
 		$this->out("Baking {$controllerName}Controller");
@@ -122,11 +130,12 @@ class ControllerTask extends Shell {
 
 		$controllerFile = low(Inflector::underscore($controllerName));
 
-		$question[] = __("Would you like to build your controller interactively?", true);
-		if (file_exists($this->path . $controllerFile .'_controller.php')) {
-			$question[] = sprintf(__("Warning: Choosing no will overwrite the %sController.", true), $controllerName);
-		}
-		$doItInteractive = $this->in(join("\n", $question), array('y','n'), 'y');
+		//$question[] = __("Would you like to build your controller interactively?", true);
+		//if (file_exists($this->path . $controllerFile .'_controller.php')) {
+		//	$question[] = sprintf(__("Warning: Choosing no will overwrite the %sController.", true), $controllerName);
+		//}
+		//$doItInteractive = $this->in(join("\n", $question), array('y','n'), 'y');
+		$doItInteractive = 'y';
 
 		if (low($doItInteractive) == 'y' || low($doItInteractive) == 'yes') {
 			$this->interactive = true;
@@ -149,9 +158,8 @@ class ControllerTask extends Shell {
 					$helpersListTrimmed = str_replace(' ', '', $helpersList);
 					$helpers = explode(',', $helpersListTrimmed);
 				}
-				 $wannaDoComponents = 'n';
-				$wannaDoComponents = $this->in(__("Would you like this controller to use any components?", true), array('y','n'), 'n');
-
+				//$wannaDoComponents = $this->in(__("Would you like this controller to use any components?", true), array('y','n'), 'n');
+				$wannaDoComponents = 'n';
 				if (low($wannaDoComponents) == 'y' || low($wannaDoComponents) == 'yes') {
 					$componentsList = $this->in(__("Please provide a comma separated list of the component names you'd like to use.\nExample: 'Acl, Security, RequestHandler'", true));
 					$componentsListTrimmed = str_replace(' ', '', $componentsList);
@@ -219,8 +227,8 @@ class ControllerTask extends Shell {
 				}
 			}
 			$this->hr();
-			$looksGood = $this->in(__('Look okay?', true), array('y','n'), 'y');
-
+			//$looksGood = $this->in(__('Look okay?', true), array('y','n'), 'y');
+			$looksGood = 'y';
 			if (low($looksGood) == 'y' || low($looksGood) == 'yes') {
 				$baked = $this->bake($controllerName, $actions, $helpers, $components, $uses);
 				if ($baked && $this->_checkUnitTest()) {
@@ -577,7 +585,7 @@ class ControllerTask extends Shell {
  * @access public
  */
 	function getName() {
-		$useDbConfig = 'default';
+		$useDbConfig = 'dev';
 		$controllers = $this->listAll($useDbConfig, 'Controllers');
 		$enteredController = '';
 
