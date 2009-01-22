@@ -335,7 +335,7 @@ class ShellDispatcher {
 										$this->help();
 									}
 								}
-								echo "executing " . get_class($shell) . "-> $task ->execute()\n";
+								echo "executing " . get_class($shell) . '->' . $task . "->execute()\n";
 								return $shell->{$task}->execute();
 							}
 						}
