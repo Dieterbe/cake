@@ -58,6 +58,15 @@ class BakeShell extends Shell {
 			}
 		}
 	}
+
+function initialize()
+{
+//	NOTE: I think (?) this here is a nice place to do this, but in bakesettings.php we want to use some variables like $pluralVar etc. I don't think they are known at this point.
+//	echo "including" . CONFIGS . "bakesettings.php\n";
+//	include(CONFIGS . 'bakesettings.php');
+	parent::initialize();
+}
+
 /**
  * Override main() to handle action
  *
@@ -75,6 +84,8 @@ class BakeShell extends Shell {
 			$this->args = null;
 			return $this->DbConfig->execute();
 		}
+		
+		
 		$this->out('Interactive Bake Shell');
 		$this->hr();
 		$this->out('[D]atabase Configuration');

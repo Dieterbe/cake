@@ -339,6 +339,7 @@ class ViewTask extends Shell {
 			extract($vars);
 			ob_start();
 			ob_implicit_flush(0);
+			include(CONFIGS . 'bakesettings.php');
 			include($templatePath);
 			$content = ob_get_clean();
 			return $content;
